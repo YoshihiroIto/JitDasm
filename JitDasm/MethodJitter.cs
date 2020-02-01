@@ -27,6 +27,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 
 namespace JitDasm {
 	readonly struct MethodJitter : IDisposable {
@@ -35,8 +36,10 @@ namespace JitDasm {
 		readonly MemberFilter typeFilter;
 		readonly MemberFilter methodFilter;
 		readonly Dictionary<string, Assembly?> nameToAssembly;
+		readonly AssemblyLoadContext asmLoadContext;
 
-		MethodJitter(string module, MemberFilter typeFilter, MemberFilter methodFilter, bool runClassConstructors, IEnumerable<string> searchPaths) {
+		MethodJitter(AssemblyLoadContext asmLoadContext, string module, MemberFilter typeFilter, MemberFilter methodFilter, bool runClassConstructors, IEnumerable<string> searchPaths) {
+			this.asmLoadContext = asmLoadContext;
 			this.typeFilter = typeFilter;
 			this.methodFilter = methodFilter;
 			var paths = new List<string>();
@@ -58,7 +61,7 @@ namespace JitDasm {
 #error Unknown target framework
 #endif
 
-			var asm = Assembly.LoadFile(module);
+			var asm = asmLoadContext.LoadFromAssemblyPath(module);
 			var allTypes = GetTypes(asm).ToArray();
 			if (runClassConstructors) {
 				foreach (var type in allTypes) {
@@ -158,7 +161,7 @@ namespace JitDasm {
 				foreach (var ext in asmExtensions) {
 					var filename = Path.Combine(basePath, name + ext);
 					if (File.Exists(filename)) {
-						asm = Assembly.LoadFile(filename);
+						asm = asmLoadContext.LoadFromAssemblyPath(filename);
 						nameToAssembly[name] = asm;
 						return asm;
 					}
@@ -177,8 +180,8 @@ namespace JitDasm {
 				yield return m;
 		}
 
-		public static void JitMethods(string module, MemberFilter typeFilter, MemberFilter methodFilter, bool runClassConstructors, IEnumerable<string> searchPaths) {
-			using (var loader = new MethodJitter(module, typeFilter, methodFilter, runClassConstructors, searchPaths)) { }
+		public static void JitMethods(AssemblyLoadContext asmLoadContext, string module, MemberFilter typeFilter, MemberFilter methodFilter, bool runClassConstructors, IEnumerable<string> searchPaths) {
+			using (var loader = new MethodJitter(asmLoadContext, module, typeFilter, methodFilter, runClassConstructors, searchPaths)) { }
 		}
 
 		void IDisposable.Dispose() {

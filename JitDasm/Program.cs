@@ -34,6 +34,9 @@ namespace JitDasm {
 		const ulong MIN_ADDR = 0x10000;
 
 		static int Main(string[] args) {
+
+			var ual = new UnloadableAssemblyLoadContext();
+
 			try {
 				switch (System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture) {
 				case System.Runtime.InteropServices.Architecture.X64:
@@ -48,7 +51,7 @@ namespace JitDasm {
 #if DEBUG
 					Console.Error.WriteLine($"Trying to jit methods in module '{jitDasmOptions.LoadModule}' but JitDasm is a debug build, not a release build!");
 #endif
-					MethodJitter.JitMethods(jitDasmOptions.LoadModule, jitDasmOptions.TypeFilter, jitDasmOptions.MethodFilter, jitDasmOptions.RunClassConstructors, jitDasmOptions.AssemblySearchPaths);
+					MethodJitter.JitMethods(ual, jitDasmOptions.LoadModule, jitDasmOptions.TypeFilter, jitDasmOptions.MethodFilter, jitDasmOptions.RunClassConstructors, jitDasmOptions.AssemblySearchPaths);
 				}
 				var (bitness, methods, knownSymbols) = GetMethodsToDisassemble(jitDasmOptions.Pid, jitDasmOptions.ModuleName, jitDasmOptions.TypeFilter, jitDasmOptions.MethodFilter, jitDasmOptions.HeapSearch);
 				var jobs = GetJobs(methods, jitDasmOptions.OutputDir, jitDasmOptions.FileOutputKind, jitDasmOptions.FilenameFormat, out var baseDir);
@@ -84,6 +87,9 @@ namespace JitDasm {
 			catch (Exception ex) {
 				Console.WriteLine(ex.ToString());
 				return 1;
+			}
+			finally {
+				ual.Unload();
 			}
 		}
 

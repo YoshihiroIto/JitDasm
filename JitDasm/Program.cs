@@ -29,7 +29,7 @@ using Iced.Intel;
 using Microsoft.Diagnostics.Runtime;
 
 namespace JitDasm {
-	static class Program {
+	public static class Program {
 		const string DASM_EXT = ".dasm";
 		const ulong MIN_ADDR = 0x10000;
 

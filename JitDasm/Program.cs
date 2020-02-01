@@ -25,15 +25,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Iced.Intel;
 using Microsoft.Diagnostics.Runtime;
+using Decoder = Iced.Intel.Decoder;
 
 namespace JitDasm {
 	public static class Program {
 		const string DASM_EXT = ".dasm";
 		const ulong MIN_ADDR = 0x10000;
 
-		static int Main(string[] args) {
+		public static int Main(StringBuilder output, string[] args) {
 
 			var ual = new UnloadableAssemblyLoadContext();
 
@@ -53,8 +55,9 @@ namespace JitDasm {
 #endif
 					MethodJitter.JitMethods(ual, jitDasmOptions.LoadModule, jitDasmOptions.TypeFilter, jitDasmOptions.MethodFilter, jitDasmOptions.RunClassConstructors, jitDasmOptions.AssemblySearchPaths);
 				}
+
 				var (bitness, methods, knownSymbols) = GetMethodsToDisassemble(jitDasmOptions.Pid, jitDasmOptions.ModuleName, jitDasmOptions.TypeFilter, jitDasmOptions.MethodFilter, jitDasmOptions.HeapSearch);
-				var jobs = GetJobs(methods, jitDasmOptions.OutputDir, jitDasmOptions.FileOutputKind, jitDasmOptions.FilenameFormat, out var baseDir);
+				var jobs = GetJobs(output, methods, jitDasmOptions.OutputDir, jitDasmOptions.FileOutputKind, jitDasmOptions.FilenameFormat, out var baseDir);
 				if (!string2.IsNullOrEmpty(baseDir))
 					Directory.CreateDirectory(baseDir);
 				var sourceDocumentProvider = new SourceDocumentProvider();
@@ -65,6 +68,7 @@ namespace JitDasm {
 							Disassemble(context, job);
 					}
 				}
+
 				return 0;
 			}
 			catch (ShowCommandLineHelpException) {
@@ -203,14 +207,14 @@ namespace JitDasm {
 			return x.MethodToken.CompareTo(y.MethodToken);
 		}
 
-		static DisasmJob[] GetJobs(DisasmInfo[] methods, string outputDir, FileOutputKind fileOutputKind, FilenameFormat filenameFormat, out string? baseDir) {
+		static DisasmJob[] GetJobs(StringBuilder output, DisasmInfo[] methods, string outputDir, FileOutputKind fileOutputKind, FilenameFormat filenameFormat, out string? baseDir) {
 			FilenameProvider filenameProvider;
 			var jobs = new List<DisasmJob>();
 
 			switch (fileOutputKind) {
 			case FileOutputKind.Stdout:
 				baseDir = null;
-				return new[] { new DisasmJob(() => (Console.Out, false), methods) };
+				return new[] { new DisasmJob(() => (new StringWriter(output), true), methods) };
 
 			case FileOutputKind.OneFile:
 				if (string.IsNullOrEmpty(outputDir))

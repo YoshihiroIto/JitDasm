@@ -1,12 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.0;netcoreapp2.1</TargetFrameworks>
-    <!-- It's not possible to target .NET Framework 4.7.2 when using dotnet pack
-         together with packaging as a tool -->
-    <NoTargetFrameworkNet472 Condition=" '$(PACKING)' == 'true' ">true</NoTargetFrameworkNet472>
-    <TargetFrameworks Condition=" '$(NoTargetFrameworkNet472)' != 'true' ">$(TargetFrameworks);net472</TargetFrameworks>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <LangVersion>8.0</LangVersion>
     <nullable>enable</nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
